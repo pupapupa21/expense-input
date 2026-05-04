@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>消費記錄</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+HK:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222;
+    --border: rgba(255,255,255,0.08);
+    --border-active: rgba(255,255,255,0.25);
+    --text: #f0f0f0;
+    --text-muted: #888;
+    --text-dim: #555;
+    --accent: #c8f060;
+    --accent-dark: #a8d040;
+    --accent-text: #0f1a00;
+    --danger: #ff5555;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans HK', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1rem;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+  .header-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .header-step {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .progress-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 2.5rem;
+  }
+  .prog-seg {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.3s ease;
+  }
+  .prog-seg.done { background: var(--accent); }
+  .prog-seg.active { background: rgba(200,240,96,0.4); }
+
+  .step-wrap {
+    animation: fadeUp 0.25s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(10px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .step-question {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 0.4rem;
+    color: var(--text);
+  }
+  .step-hint {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 2rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  input[type=text],
+  input[type=number],
+  input[type=date] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Noto Sans HK', sans-serif;
+    font-size: 18px;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  input[type=text]:focus,
+  input[type=number]:focus,
+  input[type=date]:focus {
+    border-color: var(--border-active);
+  }
+  input::placeholder { color: var(--text-dim); }
+  input[type=date]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+    cursor: pointer;
+  }
+
+  .opt-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .opt-grid.wide { grid-template-columns: 1fr 1fr 1fr; }
+  .opt-btn {
+    padding: 13px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-family: 'Noto Sans HK', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .opt-btn:hover { border-color: var(--border-active); color: var(--text); }
+  .opt-btn.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
+    font-weight: 700;
+  }
+
+  .nav-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 2rem;
+  }
+  .btn-back {
+    padding: 13px 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-family: 'Noto Sans HK', sans-serif;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-back:hover { border-color: var(--border-active); color: var(--text); }
+  .btn-next {
+    flex: 1;
+    padding: 13px 20px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--accent-text);
+    font-family: 'Noto Sans HK', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-next:hover { background: var(--accent-dark); }
+  .btn-next:disabled {
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: not-allowed;
+  }
+
+  .optional-skip {
+    display: block;
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.04em;
+    transition: color 0.15s;
+  }
+  .optional-skip:hover { color: var(--text-muted); }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-key {
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+  .summary-val { color: var(--text); font-weight: 500; }
+
+  .success-wrap {
+    text-align: center;
+    padding: 2rem 0;
+    animation: fadeUp 0.3s ease;
+  }
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 28px;
+  }
+  .success-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .success-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    font-family: 'DM Mono', monospace;
+  }
+  .success-amount {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 0.25rem;
+  }
+
+  .error-msg {
+    font-size: 13px;
+    color: var(--danger);
+    margin-top: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <span class="header-title">💳 消費記錄</span>
+    <span class="header-step" id="step-counter"></span>
+  </div>
+  <div class="progress-bar" id="progress-bar"></div>
+  <div id="main"></div>
+</div>
+
+<script>
+const NOTION_DB = 'collection://3563d672-70a1-806d-842e-000b242c6de4';
+const NOTION_MCP = 'https://mcp.notion.com/mcp';
+
+const STEPS = [
+  { key:'項目',   q:'消費項目係咩？',   hint:'例：晚飯、地鐵票、UNIQLO', type:'text',   placeholder:'輸入項目名稱' },
+  { key:'日期',   q:'幾時消費？',        hint:'預設今日，可修改',          type:'date'  },
+  { key:'金額',   q:'金額係幾多？',      hint:'輸入數字',                  type:'number', placeholder:'0' },
+  { key:'貨幣',   q:'貨幣係？',          hint:'',                          type:'select', options:['JPY','HKD'] },
+  { key:'類別',   q:'消費類別？',        hint:'',                          type:'select', options:['餐飲','交通','住宿','購物','其他'] },
+  { key:'地區',   q:'喺邊度消費？',      hint:'',                          type:'select', options:['JP','HK'] },
+  { key:'付款方式',q:'點樣付款？',       hint:'',                          type:'select', options:['現金','信用卡','金融卡','電子錢包','行動支付','銀行轉帳','LINE Pay','悠遊卡'] },
+  { key:'備註',   q:'有冇備註？',        hint:'可以跳過',                  type:'text',   placeholder:'額外說明...', optional:true },
+];
+
+let cur = 0;
+let data = {};
+let saving = false;
+let done = false;
+
+function getToday() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function derivedFromDate(d) {
+  const date = new Date(d);
+  return {
+    月份: (date.getMonth()+1) + '月',
+    年份: String(date.getFullYear())
+  };
+}
+
+function renderProgress() {
+  const bar = document.getElementById('progress-bar');
+  const counter = document.getElementById('step-counter');
+  if (done) {
+    bar.innerHTML = STEPS.map(()=>`<div class="prog-seg done"></div>`).join('');
+    counter.textContent = '';
+    return;
+  }
+  bar.innerHTML = STEPS.map((_,i)=>
+    `<div class="prog-seg ${i<cur?'done':i===cur?'active':''}"></div>`
+  ).join('');
+  counter.textContent = `${cur+1} / ${STEPS.length}`;
+}
+
+function render() {
+  renderProgress();
+  if (done) { renderSuccess(); return; }
+  const s = STEPS[cur];
+  const val = data[s.key] ?? '';
+  let body = '';
+
+  if (s.type === 'text') {
+    body = `<input type="text" id="inp" value="${val.replace(/"/g,'&quot;')}" placeholder="${s.placeholder||''}" autocomplete="off" />`;
+  } else if (s.type === 'number') {
+    body = `<input type="number" id="inp" value="${val}" placeholder="${s.placeholder||''}" min="0" step="any" />`;
+  } else if (s.type === 'date') {
+    body = `<input type="date" id="inp" value="${val||getToday()}" />`;
+  } else if (s.type === 'select') {
+    const wideClass = s.options.length >= 6 ? ' wide' : '';
+    body = `<div class="opt-grid${wideClass}">` +
+      s.options.map(o=>`<button class="opt-btn${val===o?' selected':''}" onclick="pick('${o}')">${o}</button>`).join('') +
+    `</div>`;
+  }
+
+  const navBack = cur > 0 ? `<button class="btn-back" onclick="goBack()">← 返回</button>` : '';
+  const navNext = cur < STEPS.length-1
+    ? `<button class="btn-next" id="btn-next" onclick="goNext()">繼續 →</button>`
+    : `<button class="btn-next" id="btn-next" onclick="showSummary()">預覽 →</button>`;
+  const skip = s.optional ? `<span class="optional-skip" onclick="skipStep()">跳過</span>` : '';
+
+  document.getElementById('main').innerHTML = `
+    <div class="step-wrap">
+      <div class="step-question">${s.q}</div>
+      <div class="step-hint">${s.hint}</div>
+      ${body}
+      <p class="error-msg" id="err">請填寫此欄位</p>
+      <div class="nav-row">${navBack}${navNext}</div>
+      ${skip}
+    </div>
+  `;
+
+  const inp = document.getElementById('inp');
+  if (inp) {
+    inp.focus();
+    inp.addEventListener('keydown', e => { if (e.key==='Enter') goNext(); });
+  }
+}
+
+function pick(val) {
+  const s = STEPS[cur];
+  data[s.key] = val;
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.toggle('selected', b.textContent===val));
+  setTimeout(() => goNext(), 180);
+}
+
+function goNext() {
+  const s = STEPS[cur];
+  if (s.type !== 'select') {
+    const inp = document.getElementById('inp');
+    if (inp) data[s.key] = inp.value.trim();
+  }
+  if (!s.optional && !data[s.key]) {
+    const err = document.getElementById('err');
+    if (err) err.style.display = 'block';
+    return;
+  }
+  if (s.key === '日期' && data['日期']) {
+    const d = derivedFromDate(data['日期']);
+    data['月份'] = d.月份;
+    data['年份'] = d.年份;
+  }
+  if (cur < STEPS.length - 1) { cur++; render(); }
+}
+
+function skipStep() {
+  const s = STEPS[cur];
+  data[s.key] = '';
+  if (cur < STEPS.length - 1) { cur++; render(); }
+  else showSummary();
+}
+
+function goBack() {
+  if (cur > 0) { cur--; render(); }
+}
+
+function showSummary() {
+  const s = STEPS[cur];
+  if (s.type !== 'select') {
+    const inp = document.getElementById('inp');
+    if (inp) data[s.key] = inp.value.trim();
+  }
+  if (data['日期']) {
+    const d = derivedFromDate(data['日期']);
+    data['月份'] = d.月份;
+    data['年份'] = d.年份;
+  }
+  renderProgress();
+  const displayKeys = ['項目','日期','金額','貨幣','類別','地區','付款方式','備註'];
+  const rows = displayKeys.filter(k=>data[k]).map(k=>
+    `<div class="summary-row"><span class="summary-key">${k}</span><span class="summary-val">${data[k]}</span></div>`
+  ).join('');
+
+  document.getElementById('main').innerHTML = `
+    <div class="step-wrap">
+      <div class="step-question">確認記錄</div>
+      <div class="step-hint">入咗係唔係咁？</div>
+      <div class="summary-card">${rows}</div>
+      <p class="error-msg" id="err" style="display:none">儲存失敗，請再試</p>
+      <div class="nav-row">
+        <button class="btn-back" onclick="cur=STEPS.length-1;render()">← 修改</button>
+        <button class="btn-next" id="btn-save" onclick="saveToNotion()">儲存 ✓</button>
+      </div>
+    </div>
+  `;
+}
+
+async function saveToNotion() {
+  if (saving) return;
+  saving = true;
+  const btn = document.getElementById('btn-save');
+  if (btn) { btn.textContent = '儲存中...'; btn.disabled = true; }
+
+  const prompt = `請幫我將以下消費記錄加入到 Notion 每月消費 database（${NOTION_DB}）。
+
+資料如下：
+- 項目：${data['項目']||''}
+- 日期：${data['日期']||''}
+- 金額：${parseFloat(data['金額'])||0}
+- 貨幣：${data['貨幣']||''}
+- 類別：${data['類別']||''}
+- 地區：${data['地區']||''}
+- 付款方式：${data['付款方式']||''}
+- 月份：${data['月份']||''}
+- 年份：${data['年份']||''}
+- 備註：${data['備註']||''}
+
+請用 notion-create-pages 工具新增一筆記錄。只需執行，唔需要解釋。`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        mcp_servers: [{ type:'url', url: NOTION_MCP, name:'notion-mcp' }],
+        messages: [{ role:'user', content: prompt }]
+      })
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message);
+    done = true;
+    render();
+  } catch(e) {
+    saving = false;
+    const err = document.getElementById('err');
+    if (err) { err.textContent = '儲存失敗：' + e.message; err.style.display = 'block'; }
+    const btn2 = document.getElementById('btn-save');
+    if (btn2) { btn2.textContent = '重試'; btn2.disabled = false; }
+  }
+}
+
+function renderSuccess() {
+  const amt = data['金額'] ? Number(data['金額']).toLocaleString() : '';
+  const cur2 = data['貨幣'] || '';
+  document.getElementById('main').innerHTML = `
+    <div class="success-wrap">
+      <div class="success-icon">✓</div>
+      <div class="success-amount">${amt} ${cur2}</div>
+      <div class="success-title">${data['項目']||'記錄'} 已儲存</div>
+      <div class="success-sub">${data['日期']||''} · ${data['類別']||''} · ${data['地區']||''}</div>
+      <button class="btn-next" style="width:100%" onclick="resetForm()">再入一筆 +</button>
+    </div>
+  `;
+}
+
+function resetForm() {
+  cur=0; data={}; saving=false; done=false;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
